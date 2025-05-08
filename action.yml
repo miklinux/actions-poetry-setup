@@ -103,5 +103,6 @@ runs:
       id: poetry-path
       env:
         POETRY_HOME: ${{ inputs.poetry-home }}
+      shell: bash
       run: |
         echo "${POETRY_HOME}/bin" >> $GITHUB_PATH
