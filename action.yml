@@ -1,0 +1,74 @@
+name: Poetry setup
+description: Install a given version of Poetry using a given version of Python
+
+inputs:
+  python-version:
+    default: "3"
+    required: false
+  poetry-version:
+    required: false
+  poetry-home:
+    default: "${{ github.workspace }}/.poetry"
+    required: false
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Setup Python
+      id: python-setup
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+      run: |
+        if [[ ! "$PYTHON_VERSION" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+          echo "Error: Invalid Python version format. Please use 'X' or 'X.Y'."
+          exit 1
+        fi
+
+        PYTHON_PATH="$(command -v python${PYTHON_VERSION} 2>/dev/null)"
+
+        if [[ -z $PYTHON_PATH ]]; then
+          echo "Error: Python version ${PYTHON_VERSION} is not installed."
+          exit 1
+        fi
+
+        echo "Using Python @ ${PYTHON_PATH}"
+        echo "path=${PYTHON_PATH}" >> $GITHUB_OUTPUT
+
+    - name: Get Poetry version
+      id: poetry-version
+      env:
+        POETRY_VERSION: ${{ inputs.poetry-version }}
+      run: |
+        if [[ -z "${POETRY_VERSION}" ]]; then
+          POETRY_VERSION=$(
+            curl -s https://pypi.org/pypi/poetry/json | \
+            jq -r '.info.version' \
+          )
+          if [[ -z "${POETRY_VERSION}" ]]; then
+            echo "Error: Unable to fetch the latest Poetry version."
+            exit 1
+          fi
+        fi
+
+        echo "Using Poetry version ${POETRY_VERSION}"
+        echo "version=${POETRY_VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Install Poetry
+      id: poetry-install
+      env:
+        POETRY_VERSION: ${{ steps.poetry-version.outputs.version }}
+        PYTHON_PATH: ${{ steps.python-setup.outputs.path }}
+        POETRY_HOME: ${{ inputs.poetry-home }}
+      run: |
+        curl -sSL https://install.python-poetry.org | ${PYTHON_PATH} - || {
+          echo "Error: Poetry installation failed."
+          exit 1
+        }
+
+    - name: Add Poetry to PATH
+      id: poetry-path
+      env:
+        POETRY_HOME: ${{ inputs.poetry-home }}
+      run: |
+        echo "${POETRY_HOME}/bin" >> $GITHUB_PATH
