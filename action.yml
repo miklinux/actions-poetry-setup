@@ -44,7 +44,8 @@ runs:
           exit 1
         fi
 
-        PYTHON_PATH="$(command -v python${PYTHON_VERSION} 2>/dev/null)"
+        # Exit 0 anyway to avoid bash pipefail issues
+        PYTHON_PATH="$(command -v python${PYTHON_VERSION} 2>/dev/null || exit 0)"
 
         if [[ -z $PYTHON_PATH ]]; then
           echo "Error: Python version ${PYTHON_VERSION} is not installed."
