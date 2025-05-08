@@ -84,7 +84,7 @@ runs:
           python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
 
     - name: Install Poetry
-      if: ${{ inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       id: poetry-install
       env:
         POETRY_VERSION: ${{ steps.poetry-setup.outputs.version }}
