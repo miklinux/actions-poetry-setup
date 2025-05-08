@@ -4,12 +4,29 @@ description: Install a given version of Poetry using a given version of Python
 inputs:
   python-version:
     default: "3"
-    required: false
-  poetry-version:
+    required: true
+  poetry-setup:
     required: false
   poetry-home:
     default: "${{ github.workspace }}/.poetry"
+    required: true
+  cache:
+    default: true
     required: false
+
+outputs:
+  python-path:
+    description: The path to the Python executable
+    value: ${{ steps.python-setup.outputs.path }}
+  python-version:
+    description: The version of Python that was installed
+    value: ${{ steps.python-setup.outputs.version }}
+  poetry-setup:
+    description: The version of Poetry that was installed
+    value: ${{ steps.poetry-setup.outputs.version }}
+  poetry-home:
+    description: The home directory where Poetry was installed
+    value: ${{ inputs.poetry-home }}
 
 runs:
   using: "composite"
@@ -34,11 +51,12 @@ runs:
 
         echo "Using Python @ ${PYTHON_PATH}"
         echo "path=${PYTHON_PATH}" >> $GITHUB_OUTPUT
+        echo "version=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
 
-    - name: Get Poetry version
-      id: poetry-version
+    - name: Setup Poetry
+      id: poetry-setup
       env:
-        POETRY_VERSION: ${{ inputs.poetry-version }}
+        POETRY_VERSION: ${{ inputs.poetry-setup }}
       run: |
         if [[ -z "${POETRY_VERSION}" ]]; then
           POETRY_VERSION=$(
@@ -57,7 +75,7 @@ runs:
     - name: Install Poetry
       id: poetry-install
       env:
-        POETRY_VERSION: ${{ steps.poetry-version.outputs.version }}
+        POETRY_VERSION: ${{ steps.poetry-setup.outputs.version }}
         PYTHON_PATH: ${{ steps.python-setup.outputs.path }}
         POETRY_HOME: ${{ inputs.poetry-home }}
       run: |
@@ -72,3 +90,13 @@ runs:
         POETRY_HOME: ${{ inputs.poetry-home }}
       run: |
         echo "${POETRY_HOME}/bin" >> $GITHUB_PATH
+
+    - name: Cache Poetry
+      if: ${{ inputs.cache }}
+      id: poetry-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.poetry-home }}
+        key: python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
+        restore-keys: |
+          python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
