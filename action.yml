@@ -12,6 +12,7 @@ inputs:
     required: true
   cache:
     default: true
+    type: boolean
     required: false
 
 outputs:
@@ -72,7 +73,18 @@ runs:
         echo "Using Poetry version ${POETRY_VERSION}"
         echo "version=${POETRY_VERSION}" >> $GITHUB_OUTPUT
 
+    - name: Cache Poetry
+      if: ${{ inputs.cache != 'true'}}
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.poetry-home }}
+        key: python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
+        restore-keys: |
+          python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
+
     - name: Install Poetry
+      if: ${{ inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true' }}
       id: poetry-install
       env:
         POETRY_VERSION: ${{ steps.poetry-setup.outputs.version }}
@@ -90,13 +102,3 @@ runs:
         POETRY_HOME: ${{ inputs.poetry-home }}
       run: |
         echo "${POETRY_HOME}/bin" >> $GITHUB_PATH
-
-    - name: Cache Poetry
-      if: ${{ inputs.cache }}
-      id: poetry-cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ inputs.poetry-home }}
-        key: python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
-        restore-keys: |
-          python${{ steps.python-setup.outputs.version }}-poetry${{ steps.poetry-setup.outputs.version }}
