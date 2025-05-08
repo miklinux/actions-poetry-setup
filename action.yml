@@ -74,7 +74,7 @@ runs:
         echo "version=${POETRY_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Cache Poetry
-      if: ${{ inputs.cache != 'true'}}
+      if: ${{ inputs.cache == 'true' }}
       id: cache
       uses: actions/cache@v4
       with:
